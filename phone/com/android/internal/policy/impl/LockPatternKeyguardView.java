@@ -20,7 +20,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.SystemProperties;
-import com.android.internal.telephony.SimCard;
+import com.android.internal.telephony.IccCard;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -122,7 +122,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
     private boolean stuckOnLockScreenBecauseSimMissing() {
         return mRequiresSim
                 && (!mUpdateMonitor.isDeviceProvisioned())
-                && (mUpdateMonitor.getSimState() == SimCard.State.ABSENT);
+                && (mUpdateMonitor.getSimState() == IccCard.State.ABSENT);
     }
 
     /**
@@ -159,9 +159,9 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
             }
 
             public void goToUnlockScreen() {
-                final SimCard.State simState = mUpdateMonitor.getSimState();
+                final IccCard.State simState = mUpdateMonitor.getSimState();
                 if (stuckOnLockScreenBecauseSimMissing()
-                         || (simState == SimCard.State.PUK_REQUIRED)){
+                         || (simState == IccCard.State.PUK_REQUIRED)){
                     // stuck on lock screen when sim missing or puk'd
                     return;
                 }
@@ -211,7 +211,8 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
                 mUpdateMonitor.reportFailedAttempt();
                 final int failedAttempts = mUpdateMonitor.getFailedAttempts();
                 if (failedAttempts ==
-                        (LockPatternUtils.FAILED_ATTEMPTS_BEFORE_RESET - LockPatternUtils.FAILED_ATTEMPTS_BEFORE_TIMEOUT)) {
+                        (LockPatternUtils.FAILED_ATTEMPTS_BEFORE_RESET - 
+                         LockPatternUtils.FAILED_ATTEMPTS_BEFORE_TIMEOUT)) {
                     showAlmostAtAccountLoginDialog();
                 } else if (failedAttempts >= LockPatternUtils.FAILED_ATTEMPTS_BEFORE_RESET) {
                     mLockPatternUtils.setPermanentlyLocked(true);
@@ -299,7 +300,7 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
     public void wakeWhenReadyTq(int keyCode) {
         if (DEBUG) Log.d(TAG, "onWakeKey");
         if (keyCode == KeyEvent.KEYCODE_MENU && isSecure() && (mMode == Mode.LockScreen)
-                && (mUpdateMonitor.getSimState() != SimCard.State.PUK_REQUIRED)) {
+                && (mUpdateMonitor.getSimState() != IccCard.State.PUK_REQUIRED)) {
             if (DEBUG) Log.d(TAG, "switching screens to unlock screen because wake key was MENU");
             updateScreen(Mode.UnlockScreen);
             getCallback().pokeWakelock();
@@ -337,8 +338,8 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
         if (unlockMode == UnlockMode.Pattern) {
             return mLockPatternUtils.isLockPatternEnabled();
         } else if (unlockMode == UnlockMode.SimPin) {
-            return mUpdateMonitor.getSimState() == SimCard.State.PIN_REQUIRED
-                        || mUpdateMonitor.getSimState() == SimCard.State.PUK_REQUIRED;
+            return mUpdateMonitor.getSimState() == IccCard.State.PIN_REQUIRED
+                        || mUpdateMonitor.getSimState() == IccCard.State.PUK_REQUIRED;
         } else if (unlockMode == UnlockMode.Account) {
             return true;
         } else {
@@ -451,8 +452,8 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
      * the lock screen (lock or unlock).
      */
     private Mode getInitialMode() {
-        final SimCard.State simState = mUpdateMonitor.getSimState();
-        if (stuckOnLockScreenBecauseSimMissing() || (simState == SimCard.State.PUK_REQUIRED)) {
+        final IccCard.State simState = mUpdateMonitor.getSimState();
+        if (stuckOnLockScreenBecauseSimMissing() || (simState == IccCard.State.PUK_REQUIRED)) {
             return Mode.LockScreen;
         } else if (mUpdateMonitor.isKeyboardOpen() && isSecure()) {
             return Mode.UnlockScreen;
@@ -465,8 +466,8 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
      * Given the current state of things, what should the unlock screen be?
      */
     private UnlockMode getUnlockMode() {
-        final SimCard.State simState = mUpdateMonitor.getSimState();
-        if (simState == SimCard.State.PIN_REQUIRED || simState == SimCard.State.PUK_REQUIRED) {
+        final IccCard.State simState = mUpdateMonitor.getSimState();
+        if (simState == IccCard.State.PIN_REQUIRED || simState == IccCard.State.PUK_REQUIRED) {
             return UnlockMode.SimPin;
         } else {
             return mLockPatternUtils.isPermanentlyLocked() ?
@@ -497,7 +498,8 @@ public class LockPatternKeyguardView extends KeyguardViewBase {
         int timeoutInSeconds = (int) LockPatternUtils.FAILED_ATTEMPT_TIMEOUT_MS / 1000;
         String message = mContext.getString(
                 R.string.lockscreen_failed_attempts_almost_glogin,
-                LockPatternUtils.FAILED_ATTEMPTS_BEFORE_RESET - LockPatternUtils.FAILED_ATTEMPTS_BEFORE_TIMEOUT,
+                LockPatternUtils.FAILED_ATTEMPTS_BEFORE_RESET
+                - LockPatternUtils.FAILED_ATTEMPTS_BEFORE_TIMEOUT,
                 LockPatternUtils.FAILED_ATTEMPTS_BEFORE_TIMEOUT,
                 timeoutInSeconds);
         final AlertDialog dialog = new AlertDialog.Builder(mContext)
