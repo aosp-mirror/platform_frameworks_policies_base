@@ -1179,6 +1179,27 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     mBroadcastWakeLock.acquire();
                     mHandler.post(new PassHeadsetKey(keyEvent));
                 }
+            } else if (code == KeyEvent.KEYCODE_POWER) {
+                if (down) {
+                    if (!screenIsOn) {
+                        mShouldTurnOffOnKeyUp = false;
+                    } else {
+                        mShouldTurnOffOnKeyUp = true;
+                        mHandler.postDelayed(mEndCallLongPress,
+                                ViewConfiguration.getGlobalActionKeyTimeout());
+                        result &= ~ACTION_PASS_TO_USER;
+                    }
+                } else {
+                    mHandler.removeCallbacks(mEndCallLongPress);
+                    if (mShouldTurnOffOnKeyUp) {
+                        mShouldTurnOffOnKeyUp = false;
+                        if (screenIsOn) {
+                            result &= ~ACTION_POKE_USER_ACTIVITY;
+                            result |= ACTION_GO_TO_SLEEP;
+                        }
+                        result &= ~ACTION_PASS_TO_USER;
+                    }
+                }
             }
         }
 
