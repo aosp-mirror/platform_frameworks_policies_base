@@ -41,6 +41,7 @@ import android.os.Message;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
+import android.provider.CallLog.Calls;
 import android.util.AndroidRuntimeException;
 import android.util.Config;
 import android.util.EventLog;
@@ -65,7 +66,6 @@ import android.view.WindowManager;
 import static android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
-import static android.view.WindowManager.LayoutParams.FLAG_RESTORED_STATE;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
@@ -76,11 +76,11 @@ import android.widget.TextView;
 /**
  * Android-specific Window.
  * <p>
- * todo: need to pull the generic functionality out into a base class
+ * todo(hackbod): need to pull the generic functionality out into a base class
  * in android.widget.
  */
-public class PhoneWindow extends Window implements MenuBuilder.Callback {
-    private final static String TAG = "PhoneWindow";
+public class MidWindow extends Window implements MenuBuilder.Callback {
+    private final static String TAG = "MidWindow";
 
     private final static boolean SWEEP_OPEN_MENU = false;
 
@@ -183,7 +183,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
     };
     private boolean mKeycodeCameraTimeoutActive = false;
 
-    public PhoneWindow(Context context) {
+    public MidWindow(Context context) {
         super(context);
         mLayoutInflater = LayoutInflater.from(context);
     }
@@ -482,8 +482,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                 WRAP_CONTENT, WRAP_CONTENT,
                 st.x, st.y, WindowManager.LayoutParams.TYPE_APPLICATION_PANEL,
-                WindowManager.LayoutParams.FLAG_DITHER
-                | WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM,
+                WindowManager.LayoutParams.FLAG_DITHER,
                 st.decorView.mDefaultOpacity);
 
         lp.gravity = st.gravity;
@@ -494,11 +493,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
 
     @Override
     public final void closePanel(int featureId) {
-        if (featureId == FEATURE_CONTEXT_MENU) {
-            closeContextMenu();
-        } else {
-            closePanel(getPanelState(featureId, true), true);
-        }
+        closePanel(getPanelState(featureId, true), true);
     }
 
     /**
@@ -633,23 +628,8 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
 
         closeContextMenu();
     }
-
-    /**
-     * Closes the context menu. This notifies the menu logic of the close, along
-     * with dismissing it from the UI.
-     */
+    
     private synchronized void closeContextMenu() {
-        if (mContextMenu != null) {
-            mContextMenu.close();
-            dismissContextMenu();
-        }
-    }
-
-    /**
-     * Dismisses just the context menu UI. To close the context menu, use
-     * {@link #closeContextMenu()}.
-     */
-    private synchronized void dismissContextMenu() {
         mContextMenu = null;
         
         if (mContextMenuHelper != null) {
@@ -1308,8 +1288,20 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
     }
 
     private void startCallActivity() {
-        Intent intent = new Intent(Intent.ACTION_CALL_BUTTON);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        // Note: explicitly set MIME type, because we know what it
+        // should be and can't count on every process having access
+        // to the contacts provider.
+        intent.setDataAndType(Calls.CONTENT_URI, Calls.CONTENT_TYPE);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        // This intent normally takes us to the Call log.  However, the
+        // "call_key" extra tells the DialtactsActivity that this action was
+        // triggered by a CALL keypress, which is handled specially:
+        // we immediately redirect the user to the in-call screen if a call
+        // is already in progress (see isSendKeyWhileInCall()).
+        intent.putExtra("call_key", true);
+
         getContext().startActivity(intent);
     }
 
@@ -1376,8 +1368,6 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
             return;
         }
 
-        setFlags(FLAG_RESTORED_STATE, FLAG_RESTORED_STATE);
-        
         SparseArray<Parcelable> savedStates
                 = savedInstanceState.getSparseParcelableArray(VIEWS_TAG);
         if (savedStates != null) {
@@ -1537,7 +1527,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
                          * If not handled, then pass it to the view hierarchy
                          * and anyone else that may be interested.
                          */
-                        handled = dispatchKeyShortcutEvent(event);
+                        handled = dispatchKeyShortcut(event);
 
                         if (handled && mPreparedPanel != null) {
                             mPreparedPanel.isHandled = true;
@@ -1564,10 +1554,15 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
             if (handled) {
                 return true;
             }
-            return isDown ? PhoneWindow.this.onKeyDown(mFeatureId, event.getKeyCode(), event)
-                    : PhoneWindow.this.onKeyUp(mFeatureId, event.getKeyCode(), event);
+            return isDown ? MidWindow.this.onKeyDown(mFeatureId, event.getKeyCode(), event)
+                    : MidWindow.this.onKeyUp(mFeatureId, event.getKeyCode(), event);
         }
         
+        private boolean dispatchKeyShortcut(KeyEvent event) {
+            View focusedView = findFocus();
+            return focusedView == null ? false : focusedView.dispatchKeyShortcutEvent(event);
+        }
+
         @Override
         public boolean dispatchTouchEvent(MotionEvent ev) {
             final Callback cb = getCallback();
@@ -1913,6 +1908,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
     protected ViewGroup generateLayout(DecorView decor) {
         // Apply data from current theme.
 
+        final Context c = getContext();
         TypedArray a = getWindowStyle();
 
         if (false) {
@@ -1931,10 +1927,19 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
         if (mIsFloating) {
             setLayout(WRAP_CONTENT, WRAP_CONTENT);
             setFlags(0, flagsToUpdate);
+            
+            /* All dialogs should have the window dimmed */
+            WindowManager.LayoutParams params = getAttributes();
+            TypedArray attrs = c.obtainStyledAttributes(
+                    com.android.internal.R.styleable.Theme);
+            params.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+            params.dimAmount = attrs.getFloat(
+                    android.R.styleable.Theme_backgroundDimAmount, 0.5f);
+            attrs.recycle();
         } else {
             setFlags(FLAG_LAYOUT_IN_SCREEN|FLAG_LAYOUT_INSET_DECOR, flagsToUpdate);
         }
-        
+
         if (a.getBoolean(com.android.internal.R.styleable.Window_windowNoTitle, false)) {
             requestFeature(FEATURE_NO_TITLE);
         }
@@ -1943,28 +1948,6 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
             setFlags(FLAG_FULLSCREEN, FLAG_FULLSCREEN&(~getForcedWindowFlags()));
         }
 
-        WindowManager.LayoutParams params = getAttributes();
-        
-        if (!hasSoftInputMode()) {
-            params.softInputMode = (byte)a.getInt(
-                    com.android.internal.R.styleable.Window_windowSoftInputMode,
-                    params.softInputMode);
-        }
-        
-        if (a.getBoolean(com.android.internal.R.styleable.Window_backgroundDimEnabled,
-                mIsFloating)) {
-            /* All dialogs should have the window dimmed */
-            if ((getForcedWindowFlags()&WindowManager.LayoutParams.FLAG_DIM_BEHIND) == 0) {
-                params.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-            }
-            params.dimAmount = a.getFloat(
-                    android.R.styleable.Window_backgroundDimAmount, 0.5f);
-        }
-
-        params.windowAnimations = a.getResourceId(
-                com.android.internal.R.styleable.Window_windowAnimationStyle,
-                params.windowAnimations);
-        
         // The rest are only done if this window is not embedded; otherwise,
         // the values are inherited from our container.
         if (getContainer() == null) {
@@ -2427,7 +2410,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
 
         /**
          * Whether the panel has been prepared (see
-         * {@link PhoneWindow#preparePanel}).
+         * {@link MidWindow#preparePanel}).
          */
         boolean isPrepared;
 
@@ -2570,7 +2553,6 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
      */
     private final class ContextMenuCallback implements MenuBuilder.Callback {
         private int mFeatureId;
-        private MenuDialogHelper mSubMenuHelper;
         
         public ContextMenuCallback(int featureId) {
             mFeatureId = featureId;
@@ -2582,13 +2564,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
                 if (callback != null) callback.onPanelClosed(mFeatureId, menu);
                 
                 if (menu == mContextMenu) {
-                    dismissContextMenu();
-                }
-                
-                // Dismiss the submenu, if it is showing
-                if (mSubMenuHelper != null) {
-                    mSubMenuHelper.dismiss();
-                    mSubMenuHelper = null;
+                    closeContextMenu();
                 }
             }
         }
@@ -2601,6 +2577,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
         public boolean onMenuItemSelected(MenuBuilder menu, MenuItem item) {
             Callback callback = getCallback();
             return (callback != null) && callback.onMenuItemSelected(mFeatureId, item);
+
         }
 
         public void onMenuModeChange(MenuBuilder menu) {
@@ -2611,8 +2588,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
             subMenu.setCallback(this);
 
             // The window manager will give us a valid window token
-            mSubMenuHelper = new MenuDialogHelper(subMenu);
-            mSubMenuHelper.show(null);
+            new MenuDialogHelper(subMenu).show(null);
             
             return true;
         }
