@@ -39,7 +39,6 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
-import android.os.SystemProperties;
 import android.provider.Settings;
 import static android.provider.Settings.System.END_BUTTON_BEHAVIOR;
 
@@ -194,7 +193,7 @@ public class MidWindowManager implements WindowManagerPolicy {
     }
 
     private boolean isDeviceProvisioned() {
-        if (!SystemProperties.getBoolean("ro.requires_provisioning", false)) {
+        if (!Config.getBoolean(Config.REQUIRES_PROVISIONING, false)) {
             return true;
         }
         return Settings.System.getInt(
