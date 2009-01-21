@@ -27,7 +27,6 @@ import static android.os.BatteryManager.BATTERY_STATUS_FULL;
 import static android.os.BatteryManager.BATTERY_STATUS_UNKNOWN;
 import android.os.Handler;
 import android.os.Message;
-import android.os.SystemProperties;
 import android.provider.Settings;
 import android.provider.Telephony;
 import static android.provider.Telephony.Intents.EXTRA_PLMN;
@@ -37,6 +36,7 @@ import static android.provider.Telephony.Intents.EXTRA_SPN;
 import static android.provider.Telephony.Intents.SPN_STRINGS_UPDATED_ACTION;
 import com.android.internal.telephony.SimCard;
 import com.android.internal.telephony.TelephonyIntents;
+import android.util.Config;
 import android.util.Log;
 import com.android.internal.R;
 import com.google.android.collect.Lists;
@@ -161,7 +161,7 @@ public class KeyguardUpdateMonitor {
             }
         };
 
-        if (!SystemProperties.getBoolean("ro.requires_provisioning", false)) {
+        if (!Config.REQUIRES_PROVISIONING) {
             mDeviceProvisioned = true;
         } else {
             mDeviceProvisioned = Settings.Secure.getInt(
