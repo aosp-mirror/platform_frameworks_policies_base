@@ -778,16 +778,16 @@ public class MidWindowManager implements WindowManagerPolicy {
     public boolean finishAnimationLw() {
         if (mStatusBar != null) {
             if (mForceStatusBar) {
-                mStatusBar.showLw();
+                mStatusBar.showLw(true);
             } else if (mTopFullscreenOpaqueWindowState != null) {
                WindowManager.LayoutParams lp =
                    mTopFullscreenOpaqueWindowState.getAttrs();
                boolean hideStatusBar =
                    (lp.flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
                if (hideStatusBar) {
-                   mStatusBar.hideLw();
+                   mStatusBar.hideLw(true);
                } else {
-                   mStatusBar.showLw();
+                   mStatusBar.showLw(true);
                }
            }
         }
