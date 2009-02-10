@@ -131,6 +131,7 @@ public class MidWindowManager implements WindowManagerPolicy {
     private IWindowManager mWindowManager;
     private LocalPowerManager mPowerManager;
 
+    boolean mSafeMode;
     private WindowState mStatusBar = null;
     private WindowState mSearchBar = null;
     private WindowState mKeyguard = null;
@@ -968,17 +969,28 @@ public class MidWindowManager implements WindowManagerPolicy {
         mContext.sendBroadcast(intent);
     }
 
-    public int rotationForOrientation(int orientation) {
+    public int rotationForOrientation(int orientation, int lastRotation,
+            boolean displayEnabled) {
         // get rid of rotation for now. Always rotation of 0
         return Surface.ROTATION_0;
+    }
+    
+    public boolean detectSafeMode() {
+        try {
+            int menuState = mWindowManager.getKeycodeState(KeyEvent.KEYCODE_MENU);
+            mSafeMode = menuState > 0;
+            Log.i(TAG, "Menu key state: " + menuState + " safeMode=" + mSafeMode);
+            return mSafeMode;
+        } catch (RemoteException e) {
+            // Doom! (it's also local)
+            throw new RuntimeException("window manager dead");
+        }
     }
     
     /** {@inheritDoc} */
     public void systemReady() {
         try {
-            int menuState = mWindowManager.getKeycodeState(KeyEvent.KEYCODE_MENU);
-            Log.i(TAG, "Menu key state: " + menuState);
-            if (menuState > 0) {
+            if (mSafeMode) {
                 // If the user is holding the menu key code, then we are
                 // going to boot into safe mode.
                 ActivityManagerNative.getDefault().enterSafeMode();
