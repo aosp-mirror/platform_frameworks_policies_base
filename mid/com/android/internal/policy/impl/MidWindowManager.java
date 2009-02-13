@@ -47,6 +47,7 @@ import com.android.internal.telephony.ITelephony;
 import android.util.Config;
 import android.util.EventLog;
 import android.util.Log;
+import android.view.HapticFeedbackConstants;
 import android.view.IWindowManager;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -80,6 +81,7 @@ import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
 import android.view.WindowManagerImpl;
 import android.view.WindowManagerPolicy;
+import android.view.WindowManagerPolicy.WindowState;
 import android.media.IAudioService;
 import android.media.AudioManager;
 
@@ -1051,5 +1053,12 @@ public class MidWindowManager implements WindowManagerPolicy {
         if(newOrientation != mCurrentAppOrientation) {
             mCurrentAppOrientation = newOrientation;
         }
+    }
+    
+    public boolean performHapticFeedback(WindowState win, int effectId, boolean always) {
+        return false;
+    }
+    
+    public void screenOnStopped() {
     }
 }
