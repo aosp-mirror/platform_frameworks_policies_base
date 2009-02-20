@@ -1117,6 +1117,7 @@ public class MidWindow extends Window implements MenuBuilder.Callback {
                 return true;
             }
 
+            case KeyEvent.KEYCODE_MUTE: 
             case KeyEvent.KEYCODE_HEADSETHOOK: 
             case KeyEvent.KEYCODE_PLAYPAUSE: 
             case KeyEvent.KEYCODE_STOP: 

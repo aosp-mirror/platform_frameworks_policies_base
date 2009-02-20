@@ -769,7 +769,7 @@ public class MidWindowManager implements WindowManagerPolicy {
         if (mTopFullscreenOpaqueWindowState == null
             && attrs.type >= FIRST_APPLICATION_WINDOW
             && attrs.type <= LAST_APPLICATION_WINDOW
-            && win.fillsScreenLw(mW, mH, true)
+            && win.fillsScreenLw(mW, mH, true, false)
             && win.isDisplayedLw()) {
             mTopFullscreenOpaqueWindowState = win;
         } else if ((attrs.flags & FLAG_FORCE_NOT_FULLSCREEN) != 0) {
