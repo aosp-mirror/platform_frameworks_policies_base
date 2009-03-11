@@ -971,7 +971,7 @@ public class MidWindowManager implements WindowManagerPolicy {
         mContext.sendBroadcast(intent);
     }
 
-    public int rotationForOrientation(int orientation, int lastRotation,
+    public int rotationForOrientationLw(int orientation, int lastRotation,
             boolean displayEnabled) {
         // get rid of rotation for now. Always rotation of 0
         return Surface.ROTATION_0;
@@ -1049,16 +1049,16 @@ public class MidWindowManager implements WindowManagerPolicy {
         return true;
     }
     
-    public void setCurrentOrientation(int newOrientation) {
+    public void setCurrentOrientationLw(int newOrientation) {
         if(newOrientation != mCurrentAppOrientation) {
             mCurrentAppOrientation = newOrientation;
         }
     }
     
-    public boolean performHapticFeedback(WindowState win, int effectId, boolean always) {
+    public boolean performHapticFeedbackLw(WindowState win, int effectId, boolean always) {
         return false;
     }
     
-    public void screenOnStopped() {
+    public void screenOnStoppedLw() {
     }
 }
