@@ -47,6 +47,7 @@ import com.android.internal.telephony.ITelephony;
 import android.util.Config;
 import android.util.EventLog;
 import android.util.Log;
+import android.view.HapticFeedbackConstants;
 import android.view.IWindowManager;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -80,6 +81,7 @@ import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
 import android.view.WindowManagerImpl;
 import android.view.WindowManagerPolicy;
+import android.view.WindowManagerPolicy.WindowState;
 import android.media.IAudioService;
 import android.media.AudioManager;
 
@@ -131,6 +133,7 @@ public class MidWindowManager implements WindowManagerPolicy {
     private IWindowManager mWindowManager;
     private LocalPowerManager mPowerManager;
 
+    boolean mSafeMode;
     private WindowState mStatusBar = null;
     private WindowState mSearchBar = null;
     private WindowState mKeyguard = null;
@@ -766,7 +769,7 @@ public class MidWindowManager implements WindowManagerPolicy {
         if (mTopFullscreenOpaqueWindowState == null
             && attrs.type >= FIRST_APPLICATION_WINDOW
             && attrs.type <= LAST_APPLICATION_WINDOW
-            && win.fillsScreenLw(mW, mH, true)
+            && win.fillsScreenLw(mW, mH, true, false)
             && win.isDisplayedLw()) {
             mTopFullscreenOpaqueWindowState = win;
         } else if ((attrs.flags & FLAG_FORCE_NOT_FULLSCREEN) != 0) {
@@ -968,17 +971,28 @@ public class MidWindowManager implements WindowManagerPolicy {
         mContext.sendBroadcast(intent);
     }
 
-    public int rotationForOrientation(int orientation) {
+    public int rotationForOrientationLw(int orientation, int lastRotation,
+            boolean displayEnabled) {
         // get rid of rotation for now. Always rotation of 0
         return Surface.ROTATION_0;
+    }
+    
+    public boolean detectSafeMode() {
+        try {
+            int menuState = mWindowManager.getKeycodeState(KeyEvent.KEYCODE_MENU);
+            mSafeMode = menuState > 0;
+            Log.i(TAG, "Menu key state: " + menuState + " safeMode=" + mSafeMode);
+            return mSafeMode;
+        } catch (RemoteException e) {
+            // Doom! (it's also local)
+            throw new RuntimeException("window manager dead");
+        }
     }
     
     /** {@inheritDoc} */
     public void systemReady() {
         try {
-            int menuState = mWindowManager.getKeycodeState(KeyEvent.KEYCODE_MENU);
-            Log.i(TAG, "Menu key state: " + menuState);
-            if (menuState > 0) {
+            if (mSafeMode) {
                 // If the user is holding the menu key code, then we are
                 // going to boot into safe mode.
                 ActivityManagerNative.getDefault().enterSafeMode();
@@ -1035,9 +1049,16 @@ public class MidWindowManager implements WindowManagerPolicy {
         return true;
     }
     
-    public void setCurrentOrientation(int newOrientation) {
+    public void setCurrentOrientationLw(int newOrientation) {
         if(newOrientation != mCurrentAppOrientation) {
             mCurrentAppOrientation = newOrientation;
         }
+    }
+    
+    public boolean performHapticFeedbackLw(WindowState win, int effectId, boolean always) {
+        return false;
+    }
+    
+    public void screenOnStoppedLw() {
     }
 }
