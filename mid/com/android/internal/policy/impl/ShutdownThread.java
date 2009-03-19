@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
  
 package com.android.internal.policy.impl;
 
 import android.app.ProgressDialog;
 import android.app.AlertDialog;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.IBluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.RemoteException;
@@ -34,9 +37,12 @@ final class ShutdownThread extends Thread {
     private static final String TAG = "ShutdownThread";
     private static final int MAX_NUM_PHONE_STATE_READS = 16;
     private static final int PHONE_STATE_POLL_SLEEP_MSEC = 500;
-    private static final ITelephony sPhone = 
+    private static final ITelephony sPhone =
         ITelephony.Stub.asInterface(ServiceManager.checkService("phone"));
-    
+    private static final IBluetoothDevice sBluetooth =
+        IBluetoothDevice.Stub.asInterface(ServiceManager.getService(Context.BLUETOOTH_SERVICE));
+
+
     // state tracking
     private static Object sIsStartedGuard = new Object();
     private static boolean sIsStarted = false;
@@ -61,7 +67,7 @@ final class ShutdownThread extends Thread {
                 return;
             }
         }
-        
+
         Log.d(TAG, "Notifying thread to start radio shutdown");
 
         if (confirm) {
@@ -105,31 +111,61 @@ final class ShutdownThread extends Thread {
         sInstance.start();
     }
 
-    /** 
-     * Makes sure we handle the shutdown gracefully.  
-     * Shuts off power regardless of radio state if the alloted time has passed. 
+    /**
+     * Makes sure we handle the shutdown gracefully.
+     * Shuts off power regardless of radio and bluetooth state if the alloted time has passed.
      */
     public void run() {
-        //shutdown the phone radio if possible.
-        if (sPhone != null) {
-            try {
-                //shutdown radio
-                sPhone.setRadio(false);
+        boolean bluetoothOff;
+        boolean radioOff;
 
-                for (int i = 0; i < MAX_NUM_PHONE_STATE_READS; i++){
-                    // poll radio up to 64 times, with a 0.5 sec delay between each call,
-                    // totaling 32 sec.
-                    if (!sPhone.isRadioOn()) {
-                        Log.d(TAG, "Radio shutdown complete.");
-                        break;
-                    }
-                    SystemClock.sleep(PHONE_STATE_POLL_SLEEP_MSEC);
-                }
-            } catch (RemoteException ex) {
-                Log.e(TAG, "RemoteException caught from failed radio shutdown.", ex);
+        try {
+            bluetoothOff = sBluetooth == null ||
+                           sBluetooth.getBluetoothState() == BluetoothDevice.BLUETOOTH_STATE_OFF;
+            if (!bluetoothOff) {
+                sBluetooth.disable(false);  // disable but don't persist new state
             }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "RemoteException during bluetooth shutdown", ex);
+            bluetoothOff = true;
         }
-        
+
+        try {
+            radioOff = sPhone == null || !sPhone.isRadioOn();
+            if (!radioOff) {
+                sPhone.setRadio(false);
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "RemoteException during radio shutdown", ex);
+            radioOff = true;
+        }
+
+        // Wait a max of 32 seconds for clean shutdown
+        for (int i = 0; i < MAX_NUM_PHONE_STATE_READS; i++) {
+            if (!bluetoothOff) {
+                try {
+                    bluetoothOff =
+                            sBluetooth.getBluetoothState() == BluetoothDevice.BLUETOOTH_STATE_OFF;
+                } catch (RemoteException ex) {
+                    Log.e(TAG, "RemoteException during bluetooth shutdown", ex);
+                    bluetoothOff = true;
+                }
+            }
+            if (!radioOff) {
+                try {
+                    radioOff = !sPhone.isRadioOn();
+                } catch (RemoteException ex) {
+                    Log.e(TAG, "RemoteException during radio shutdown", ex);
+                    radioOff = true;
+                }
+            }
+            if (radioOff && bluetoothOff) {
+                Log.d(TAG, "Radio and Bluetooth shutdown complete.");
+                break;
+            }
+            SystemClock.sleep(PHONE_STATE_POLL_SLEEP_MSEC);
+        }
+
         //shutdown power
         Log.d(TAG, "Shutting down power.");
         Power.shutdown();
