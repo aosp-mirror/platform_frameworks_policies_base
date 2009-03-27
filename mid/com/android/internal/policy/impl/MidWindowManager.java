@@ -1014,7 +1014,7 @@ public class MidWindowManager implements WindowManagerPolicy {
         int rotation = Surface.ROTATION_0;
         try {
             //set orientation on WindowManager
-            mWindowManager.setRotation(rotation, true);
+            mWindowManager.setRotation(rotation, true, 0);
         } catch (RemoteException e) {
         }
 
