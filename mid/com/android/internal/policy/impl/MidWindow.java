@@ -1120,7 +1120,7 @@ public class MidWindow extends Window implements MenuBuilder.Callback {
                 return true;
             }
 
-            case KeyEvent.KEYCODE_PLAYPAUSE:
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
                 /* Suppress PLAYPAUSE toggle if Phone is ringing or in-call,
                  * to avoid music playback */
                 if (mTelephonyManager == null) {
@@ -1133,11 +1133,11 @@ public class MidWindow extends Window implements MenuBuilder.Callback {
                 }
             case KeyEvent.KEYCODE_MUTE: 
             case KeyEvent.KEYCODE_HEADSETHOOK: 
-            case KeyEvent.KEYCODE_STOP: 
-            case KeyEvent.KEYCODE_NEXTSONG: 
-            case KeyEvent.KEYCODE_PREVIOUSSONG: 
-            case KeyEvent.KEYCODE_REWIND: 
-            case KeyEvent.KEYCODE_FORWARD: {
+            case KeyEvent.KEYCODE_MEDIA_STOP: 
+            case KeyEvent.KEYCODE_MEDIA_NEXT: 
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS: 
+            case KeyEvent.KEYCODE_MEDIA_REWIND: 
+            case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD: {
                 Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
                 intent.putExtra(Intent.EXTRA_KEY_EVENT, event);
                 getContext().sendOrderedBroadcast(intent, null);
@@ -1247,12 +1247,12 @@ public class MidWindow extends Window implements MenuBuilder.Callback {
             }
 
             case KeyEvent.KEYCODE_HEADSETHOOK: 
-            case KeyEvent.KEYCODE_PLAYPAUSE: 
-            case KeyEvent.KEYCODE_STOP: 
-            case KeyEvent.KEYCODE_NEXTSONG: 
-            case KeyEvent.KEYCODE_PREVIOUSSONG: 
-            case KeyEvent.KEYCODE_REWIND: 
-            case KeyEvent.KEYCODE_FORWARD: {
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: 
+            case KeyEvent.KEYCODE_MEDIA_STOP: 
+            case KeyEvent.KEYCODE_MEDIA_NEXT: 
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS: 
+            case KeyEvent.KEYCODE_MEDIA_REWIND: 
+            case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD: {
                 Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
                 intent.putExtra(Intent.EXTRA_KEY_EVENT, event);
                 getContext().sendOrderedBroadcast(intent, null);
