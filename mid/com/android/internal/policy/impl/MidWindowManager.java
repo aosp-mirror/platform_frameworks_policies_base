@@ -754,7 +754,8 @@ public class MidWindowManager implements WindowManagerPolicy {
     }
 
     /** {@inheritDoc} */
-    public void finishLayoutLw() {
+    public boolean finishLayoutLw() {
+        return false;
     }
 
     /** {@inheritDoc} */
