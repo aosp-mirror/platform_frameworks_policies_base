@@ -649,8 +649,9 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
 
         PanelFeatureState st = getPanelState(featureId, true);
         if (!st.isOpen) {
-            if (getContext().getResources().getConfiguration().keyboard
-                    == Configuration.KEYBOARD_NOKEYS) {
+            Configuration config = getContext().getResources().getConfiguration(); 
+            if (config.keyboard == Configuration.KEYBOARD_NOKEYS
+                    || config.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_YES) {
                 mKeycodeMenuTimeoutHandler.removeMessages(MSG_MENU_LONG_PRESS);
                 mKeycodeMenuTimeoutHandler.sendMessageDelayed(
                         mKeycodeMenuTimeoutHandler.obtainMessage(MSG_MENU_LONG_PRESS),
