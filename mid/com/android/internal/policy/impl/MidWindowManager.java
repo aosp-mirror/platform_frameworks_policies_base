@@ -834,17 +834,12 @@ public class MidWindowManager implements WindowManagerPolicy {
      * @return Whether music is being played right now.
      */
     private boolean isMusicActive() {
-        final IAudioService audio = getAudioInterface();
-        if (audio == null) {
-            Log.w(TAG, "isMusicActive: couldn't get IAudioService reference");
+        final AudioManager am = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+        if (am == null) {
+            Log.w(TAG, "isMusicActive: couldn't get AudioManager reference");
             return false;
         }
-        try {
-            return audio.isMusicActive();
-        } catch (RemoteException e) {
-            Log.w(TAG, "IAudioService.isMusicActive() threw RemoteException " + e);
-            return false;
-        }
+        return am.isMusicActive();
     }
 
     /**
