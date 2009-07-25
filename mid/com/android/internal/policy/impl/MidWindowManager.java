@@ -526,7 +526,7 @@ public class MidWindowManager implements WindowManagerPolicy {
 
     /** {@inheritDoc} */
     public boolean interceptKeyTi(WindowState win, int code, int metaKeys, boolean down, 
-            int repeatCount) {
+            int repeatCount, int flags) {
         if (false) {
             Log.d(TAG, "interceptKeyTi code=" + code + " down=" + down + " repeatCount="
                     + repeatCount);
@@ -1066,6 +1066,9 @@ public class MidWindowManager implements WindowManagerPolicy {
     
     public boolean performHapticFeedbackLw(WindowState win, int effectId, boolean always) {
         return false;
+    }
+    
+    public void keyFeedbackFromInput(KeyEvent event) {
     }
     
     public void screenOnStoppedLw() {
