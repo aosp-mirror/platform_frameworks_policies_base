@@ -66,6 +66,7 @@ import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
 import static android.view.WindowManager.LayoutParams.LAST_APPLICATION_WINDOW;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_MEDIA;
+import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_MEDIA_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_PANEL;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_SUB_PANEL;
 import static android.view.WindowManager.LayoutParams.TYPE_KEYGUARD;
@@ -117,9 +118,10 @@ public class MidWindowManager implements WindowManagerPolicy {
     // things in here CAN NOT take focus, but are shown on top of everything else.
     private static final int SYSTEM_OVERLAY_LAYER = 12;
 
-    private static final int APPLICATION_PANEL_SUBLAYER = 1;
-    private static final int APPLICATION_MEDIA_SUBLAYER = -1;
-    private static final int APPLICATION_SUB_PANEL_SUBLAYER = 2;
+    static final int APPLICATION_MEDIA_SUBLAYER = -2;
+    static final int APPLICATION_MEDIA_OVERLAY_SUBLAYER = -1;
+    static final int APPLICATION_PANEL_SUBLAYER = 1;
+    static final int APPLICATION_SUB_PANEL_SUBLAYER = 2;
 
     private static final boolean SINGLE_PRESS_OFF = false;
     
@@ -343,6 +345,8 @@ public class MidWindowManager implements WindowManagerPolicy {
             return APPLICATION_PANEL_SUBLAYER;
         case TYPE_APPLICATION_MEDIA:
             return APPLICATION_MEDIA_SUBLAYER;
+        case TYPE_APPLICATION_MEDIA_OVERLAY:
+            return APPLICATION_MEDIA_OVERLAY_SUBLAYER;
         case TYPE_APPLICATION_SUB_PANEL:
             return APPLICATION_SUB_PANEL_SUBLAYER;
         }
@@ -662,6 +666,10 @@ public class MidWindowManager implements WindowManagerPolicy {
      */
     private void launchHomeFromHotKey() {
         // no keyguard stuff to worry about, just launch home!
+        try {
+            ActivityManagerNative.getDefault().stopAppSwitches();
+        } catch (RemoteException e) {
+        }
         mContext.startActivity(mHomeIntent);
         sendCloseSystemWindows();
     }
@@ -1030,11 +1038,16 @@ public class MidWindowManager implements WindowManagerPolicy {
     boolean goHome() {
         if (false) {
             // This code always brings home to the front.
+            try {
+                ActivityManagerNative.getDefault().stopAppSwitches();
+            } catch (RemoteException e) {
+            }
             mContext.startActivity(mHomeIntent);
         } else {
             // This code brings home to the front or, if it is already
             // at the front, puts the device to sleep.
             try {
+                ActivityManagerNative.getDefault().stopAppSwitches();
                 int result = ActivityManagerNative.getDefault()
                         .startActivity(null, mHomeIntent,
                                 mHomeIntent.resolveTypeIfNeeded(mContext.getContentResolver()),

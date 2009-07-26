@@ -17,6 +17,7 @@
 package com.android.internal.policy.impl;
 
 import com.android.internal.R;
+import com.android.internal.app.ShutdownThread;
 import com.google.android.collect.Lists;
 
 import android.app.AlertDialog;
@@ -146,7 +147,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
                     public void onPress() {
                         // shutdown by making sure radio and power are handled accordingly.
-                        ShutdownThread.shutdownAfterDisablingRadio(mContext, true);
+                        ShutdownThread.shutdown(mContext, true);
                     }
 
                     public boolean showDuringKeyguard() {
