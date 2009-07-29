@@ -968,11 +968,10 @@ public class MidWindowManager implements WindowManagerPolicy {
     }
 
     private void sendCloseSystemWindows(String reason) {
-        Intent intent = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
-        if (reason != null) {
-            intent.putExtra(SYSTEM_DIALOG_REASON_KEY, reason);
+        try {
+            ActivityManagerNative.getDefault().closeSystemDialogs(reason);
+        } catch (RemoteException e) {
         }
-        mContext.sendBroadcast(intent);
     }
 
     public int rotationForOrientationLw(int orientation, int lastRotation,
