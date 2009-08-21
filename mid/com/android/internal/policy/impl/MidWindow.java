@@ -67,6 +67,8 @@ import android.view.WindowManager;
 import static android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
+
+import android.view.Window.Callback;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
@@ -1886,6 +1888,11 @@ public class MidWindow extends Window implements MenuBuilder.Callback {
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
+            
+            final Callback cb = getCallback();
+            if (cb != null && mFeatureId < 0) {
+                cb.onAttachedToWindow();
+            }
 
             if (mFeatureId == -1) {
                 /*
@@ -1896,6 +1903,16 @@ public class MidWindow extends Window implements MenuBuilder.Callback {
                  * should be shown again.
                  */
                 openPanelsAfterRestore();
+            }
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            
+            final Callback cb = getCallback();
+            if (cb != null && mFeatureId < 0) {
+                cb.onDetachedFromWindow();
             }
         }
     }
