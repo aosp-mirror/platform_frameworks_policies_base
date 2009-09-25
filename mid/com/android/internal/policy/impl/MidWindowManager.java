@@ -83,6 +83,7 @@ import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
 import android.view.WindowManagerImpl;
 import android.view.WindowManagerPolicy;
 import android.view.WindowManagerPolicy.WindowState;
+import android.view.animation.Animation;
 import android.media.IAudioService;
 import android.media.AudioManager;
 
@@ -358,6 +359,15 @@ public class MidWindowManager implements WindowManagerPolicy {
         return STATUS_BAR_LAYER;
     }
 
+    public boolean doesForceHide(WindowState win, WindowManager.LayoutParams attrs) {
+        return attrs.type == WindowManager.LayoutParams.TYPE_KEYGUARD;
+    }
+    
+    public boolean canBeForceHidden(WindowState win, WindowManager.LayoutParams attrs) {
+        return attrs.type != WindowManager.LayoutParams.TYPE_STATUS_BAR
+                && attrs.type != WindowManager.LayoutParams.TYPE_WALLPAPER;
+    }
+    
     /** {@inheritDoc} */
     public View addStartingWindow(IBinder appToken, String packageName,
                                   int theme, CharSequence nonLocalizedLabel,
@@ -524,6 +534,10 @@ public class MidWindowManager implements WindowManagerPolicy {
         return 0;
     }
 
+    public Animation createForceHideEnterAnimation() {
+        return null;
+    }
+    
     private static IAudioService getAudioInterface() {
         return IAudioService.Stub.asInterface(ServiceManager.checkService(Context.AUDIO_SERVICE));
     }
