@@ -1090,4 +1090,8 @@ public class MidWindowManager implements WindowManagerPolicy {
     
     public void screenOnStoppedLw() {
     }
+
+    public boolean allowKeyRepeat() {
+        return true;
+    }
 }
