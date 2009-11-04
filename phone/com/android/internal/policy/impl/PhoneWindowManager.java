@@ -1821,7 +1821,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             // This code brings home to the front or, if it is already
             // at the front, puts the device to sleep.
             try {
-                ActivityManagerNative.getDefault().stopAppSwitches();
                 sendCloseSystemWindows();
                 int result = ActivityManagerNative.getDefault()
                         .startActivity(null, mHomeIntent,
