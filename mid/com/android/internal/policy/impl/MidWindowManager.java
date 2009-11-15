@@ -83,6 +83,7 @@ import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
 import android.view.WindowManagerImpl;
 import android.view.WindowManagerPolicy;
 import android.view.WindowManagerPolicy.WindowState;
+import android.view.animation.Animation;
 import android.media.IAudioService;
 import android.media.AudioManager;
 
@@ -354,6 +355,19 @@ public class MidWindowManager implements WindowManagerPolicy {
         return 0;
     }
 
+    public int getMaxWallpaperLayer() {
+        return STATUS_BAR_LAYER;
+    }
+
+    public boolean doesForceHide(WindowState win, WindowManager.LayoutParams attrs) {
+        return attrs.type == WindowManager.LayoutParams.TYPE_KEYGUARD;
+    }
+    
+    public boolean canBeForceHidden(WindowState win, WindowManager.LayoutParams attrs) {
+        return attrs.type != WindowManager.LayoutParams.TYPE_STATUS_BAR
+                && attrs.type != WindowManager.LayoutParams.TYPE_WALLPAPER;
+    }
+    
     /** {@inheritDoc} */
     public View addStartingWindow(IBinder appToken, String packageName,
                                   int theme, CharSequence nonLocalizedLabel,
@@ -520,13 +534,17 @@ public class MidWindowManager implements WindowManagerPolicy {
         return 0;
     }
 
+    public Animation createForceHideEnterAnimation() {
+        return null;
+    }
+    
     private static IAudioService getAudioInterface() {
         return IAudioService.Stub.asInterface(ServiceManager.checkService(Context.AUDIO_SERVICE));
     }
 
     /** {@inheritDoc} */
     public boolean interceptKeyTi(WindowState win, int code, int metaKeys, boolean down, 
-            int repeatCount) {
+            int repeatCount, int flags) {
         if (false) {
             Log.d(TAG, "interceptKeyTi code=" + code + " down=" + down + " repeatCount="
                     + repeatCount);
@@ -762,8 +780,8 @@ public class MidWindowManager implements WindowManagerPolicy {
     }
 
     /** {@inheritDoc} */
-    public boolean finishLayoutLw() {
-        return false;
+    public int finishLayoutLw() {
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -834,17 +852,12 @@ public class MidWindowManager implements WindowManagerPolicy {
      * @return Whether music is being played right now.
      */
     private boolean isMusicActive() {
-        final IAudioService audio = getAudioInterface();
-        if (audio == null) {
-            Log.w(TAG, "isMusicActive: couldn't get IAudioService reference");
+        final AudioManager am = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+        if (am == null) {
+            Log.w(TAG, "isMusicActive: couldn't get AudioManager reference");
             return false;
         }
-        try {
-            return audio.isMusicActive();
-        } catch (RemoteException e) {
-            Log.w(TAG, "IAudioService.isMusicActive() threw RemoteException " + e);
-            return false;
-        }
+        return am.isMusicActive();
     }
 
     /**
@@ -1072,6 +1085,13 @@ public class MidWindowManager implements WindowManagerPolicy {
         return false;
     }
     
+    public void keyFeedbackFromInput(KeyEvent event) {
+    }
+    
     public void screenOnStoppedLw() {
+    }
+
+    public boolean allowKeyRepeat() {
+        return true;
     }
 }
