@@ -965,11 +965,6 @@ public class MidWindowManager implements WindowManagerPolicy {
     }
 
     /** {@inheritDoc} */
-    public boolean keyguardIsShowingTq() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     public boolean inKeyguardRestrictedKeyInputMode() {
         return false;
     }
