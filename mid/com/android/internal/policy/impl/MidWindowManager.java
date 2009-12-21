@@ -824,6 +824,10 @@ public class MidWindowManager implements WindowManagerPolicy {
        return false;
     }
 
+    public boolean allowAppAnimationsLw() {
+        return true;
+    }
+    
     /** {@inheritDoc} */
     public boolean preprocessInputEventTq(RawInputEvent event) {
         return false;
@@ -956,6 +960,11 @@ public class MidWindowManager implements WindowManagerPolicy {
         mScreenOn = true;
     }
 
+    /** {@inheritDoc} */
+    public boolean isScreenOn() {
+        return mScreenOn;
+    }
+    
     /** {@inheritDoc} */
     public void enableKeyguard(boolean enabled) {
     }
