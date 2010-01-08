@@ -58,7 +58,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import static android.view.ViewGroup.LayoutParams.FILL_PARENT;
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import android.view.ViewManager;
 import android.view.VolumePanel;
@@ -68,7 +68,6 @@ import static android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
 
-import android.view.Window.Callback;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
@@ -238,7 +237,7 @@ public class MidWindow extends Window implements MenuBuilder.Callback {
 
     @Override
     public void setContentView(View view) {
-        setContentView(view, new ViewGroup.LayoutParams(FILL_PARENT, FILL_PARENT));
+        setContentView(view, new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
     }
 
     @Override
@@ -458,7 +457,7 @@ public class MidWindow extends Window implements MenuBuilder.Callback {
             }
 
             int backgroundResId; 
-            if (lp.width == ViewGroup.LayoutParams.FILL_PARENT) {
+            if (lp.width == ViewGroup.LayoutParams.MATCH_PARENT) {
                 // If the contents is fill parent for the width, set the
                 // corresponding background
                 backgroundResId = st.fullBackground;
@@ -1722,7 +1721,7 @@ public class MidWindow extends Window implements MenuBuilder.Callback {
                 if (SWEEP_OPEN_MENU) {
                     if (mMenuBackground == null && mFeatureId < 0
                             && getAttributes().height
-                            == WindowManager.LayoutParams.FILL_PARENT) {
+                            == WindowManager.LayoutParams.MATCH_PARENT) {
                         mMenuBackground = getContext().getResources().getDrawable(
                                 com.android.internal.R.drawable.menu_background);
                     }
@@ -2042,7 +2041,7 @@ public class MidWindow extends Window implements MenuBuilder.Callback {
         mDecor.startChanging();
 
         View in = mLayoutInflater.inflate(layoutResource, null);
-        decor.addView(in, new ViewGroup.LayoutParams(FILL_PARENT, FILL_PARENT));
+        decor.addView(in, new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
 
         ViewGroup contentParent = (ViewGroup)findViewById(ID_ANDROID_CONTENT);
         if (contentParent == null) {

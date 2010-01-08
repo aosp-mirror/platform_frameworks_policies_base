@@ -21,16 +21,13 @@ import android.app.ActivityManagerNative;
 import android.app.IActivityManager;
 import android.app.IStatusBar;
 import android.content.BroadcastReceiver;
-import android.content.ContentQueryMap;
 import android.content.ContentResolver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Rect;
 import android.os.Handler;
 import android.os.IBinder;
@@ -40,18 +37,14 @@ import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.provider.Settings;
-import static android.provider.Settings.System.END_BUTTON_BEHAVIOR;
 
 import com.android.internal.policy.PolicyManager;
-import com.android.internal.telephony.ITelephony;
 import android.util.Config;
 import android.util.EventLog;
 import android.util.Log;
-import android.view.HapticFeedbackConstants;
 import android.view.IWindowManager;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.OrientationListener;
 import android.view.RawInputEvent;
 import android.view.Surface;
 import android.view.View;
@@ -82,13 +75,9 @@ import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
 import android.view.WindowManagerImpl;
 import android.view.WindowManagerPolicy;
-import android.view.WindowManagerPolicy.WindowState;
 import android.view.animation.Animation;
 import android.media.IAudioService;
 import android.media.AudioManager;
-
-import java.util.Observable;
-import java.util.Observer;
 
 /**
  * WindowManagerPolicy implementation for the Android MID UI.
@@ -409,8 +398,8 @@ public class MidWindowManager implements WindowManagerPolicy {
             WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE|
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
 
-        win.setLayout(WindowManager.LayoutParams.FILL_PARENT,
-                            WindowManager.LayoutParams.FILL_PARENT);
+        win.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
+                            WindowManager.LayoutParams.MATCH_PARENT);
 
         final WindowManager.LayoutParams params = win.getAttributes();
         params.token = appToken;
