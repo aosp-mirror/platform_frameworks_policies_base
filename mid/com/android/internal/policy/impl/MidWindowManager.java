@@ -1017,7 +1017,11 @@ public class MidWindowManager implements WindowManagerPolicy {
         } catch (RemoteException e) {
         }
     }
-    
+
+    /** {@inheritDoc} */
+    public void userActivity() {
+    }
+
     /** {@inheritDoc} */
     public void enableScreenAfterBoot() {
         updateRotation();
