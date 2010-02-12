@@ -291,6 +291,9 @@ public class MidWindowManager implements WindowManagerPolicy {
         return false;
     }
     
+    public void dispatchedPointerEventLw(MotionEvent ev, int targetX, int targetY) {
+    }
+    
     /** {@inheritDoc} */
     public int windowTypeToLayerLw(int type) {
         if (type >= FIRST_APPLICATION_WINDOW && type <= LAST_APPLICATION_WINDOW) {
