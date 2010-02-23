@@ -258,6 +258,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     PowerManager.WakeLock mBroadcastWakeLock;
     PowerManager.WakeLock mDockWakeLock;
 
+    int lastKeyCode = KeyEvent.getMaxKeyCode() + 1; //invalid code
+    int keyRepeatCount = 0;
+
     class SettingsObserver extends ContentObserver {
         SettingsObserver(Handler handler) {
             super(handler);
@@ -1688,6 +1691,18 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         boolean down = event.value != 0;
 
         if (type == RawInputEvent.EV_KEY) {
+            if (down) {
+                if (code == lastKeyCode) {
+                    keyRepeatCount++;
+                } else {
+                    keyRepeatCount = 0;
+                }
+                lastKeyCode = code;
+            } else {
+                keyRepeatCount = 0;
+                lastKeyCode = KeyEvent.getMaxKeyCode() + 1; //invalid code
+            }
+
             if (code == KeyEvent.KEYCODE_ENDCALL
                     || code == KeyEvent.KEYCODE_POWER) {
                 if (down) {
@@ -1750,7 +1765,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     // only do it if the showing app doesn't process the key on its own.
                     KeyEvent keyEvent = new KeyEvent(event.when, event.when,
                             down ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP,
-                            code, 0);
+                            code, keyRepeatCount);
                     mBroadcastWakeLock.acquire();
                     mHandler.post(new PassHeadsetKey(keyEvent));
                 }
