@@ -797,7 +797,7 @@ public class MidWindowManager implements WindowManagerPolicy {
     }
 
     /** {@inheritDoc} */
-    public boolean finishAnimationLw() {
+    public int finishAnimationLw() {
         if (mStatusBar != null) {
             if (mForceStatusBar) {
                 mStatusBar.showLw(true);
@@ -813,7 +813,7 @@ public class MidWindowManager implements WindowManagerPolicy {
                }
            }
         }
-       return false;
+       return 0;
     }
 
     public boolean allowAppAnimationsLw() {
