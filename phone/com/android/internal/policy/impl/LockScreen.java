@@ -224,7 +224,8 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
     }
 
     private boolean isSilentMode() {
-        return mAudioManager.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
+        int mode = mAudioManager.getRingerMode();
+        return  mode == AudioManager.RINGER_MODE_SILENT || mode == AudioManager.RINGER_MODE_VIBRATE;
     }
 
     private void updateRightTabResources() {
@@ -269,9 +270,17 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         } else if (whichHandle == SlidingTab.OnTriggerListener.RIGHT_HANDLE) {
             // toggle silent mode
             mSilentMode = !mSilentMode;
-            mAudioManager.setRingerMode(mSilentMode ? AudioManager.RINGER_MODE_SILENT
-                        : AudioManager.RINGER_MODE_NORMAL);
 
+            int ringerMode  = AudioManager.RINGER_MODE_NORMAL;
+            if (mSilentMode) {
+                int vibrateMode = mAudioManager.getVibrateSetting(AudioManager.VIBRATE_TYPE_RINGER);
+                if (vibrateMode == AudioManager.VIBRATE_SETTING_ON) {
+                    ringerMode = AudioManager.RINGER_MODE_VIBRATE;
+                } else {
+                    ringerMode = AudioManager.RINGER_MODE_SILENT;
+                }
+            }
+            mAudioManager.setRingerMode(ringerMode);
             updateRightTabResources();
 
             String message = mSilentMode ?
@@ -599,7 +608,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
 
     /** {@inheritDoc} */
     public void onRingerModeChanged(int state) {
-        boolean silent = AudioManager.RINGER_MODE_SILENT == state;
+        boolean silent = AudioManager.RINGER_MODE_SILENT == state || AudioManager.RINGER_MODE_VIBRATE == state;
         if (silent != mSilentMode) {
             mSilentMode = silent;
             updateRightTabResources();
