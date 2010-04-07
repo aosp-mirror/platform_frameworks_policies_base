@@ -173,9 +173,9 @@ public class RecentApplicationsDialog extends Dialog implements OnClickListener 
         final List<ActivityManager.RecentTaskInfo> recentTasks =
                                         am.getRecentTasks(MAX_RECENT_TASKS, 0);
 
-        ResolveInfo homeInfo = pm.resolveActivity(
-                new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
-                0);
+        ActivityInfo homeInfo = 
+            new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+                    .resolveActivityInfo(pm, 0);
 
         IconUtilities iconUtilities = new IconUtilities(getContext());
 
@@ -197,9 +197,9 @@ public class RecentApplicationsDialog extends Dialog implements OnClickListener 
 
             // Skip the current home activity.
             if (homeInfo != null) {
-                if (homeInfo.activityInfo.packageName.equals(
+                if (homeInfo.packageName.equals(
                         intent.getComponent().getPackageName())
-                        && homeInfo.activityInfo.name.equals(
+                        && homeInfo.name.equals(
                                 intent.getComponent().getClassName())) {
                     continue;
                 }
