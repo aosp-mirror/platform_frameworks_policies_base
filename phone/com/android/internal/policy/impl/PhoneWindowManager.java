@@ -829,59 +829,59 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             return null;
         }
         
-    	Context context = mContext;
-    	boolean setTheme = false;
-    	//Log.i(TAG, "addStartingWindow " + packageName + ": nonLocalizedLabel="
-    	//        + nonLocalizedLabel + " theme=" + Integer.toHexString(theme));
-    	if (theme != 0 || labelRes != 0) {
-    	    try {
-    	        context = context.createPackageContext(packageName, 0);
-    	        if (theme != 0) {
-    	            context.setTheme(theme);
-    	            setTheme = true;
-    	        }
-    	    } catch (PackageManager.NameNotFoundException e) {
-                // Ignore
-            }
-    	}
-    	if (!setTheme) {
-    	    context.setTheme(com.android.internal.R.style.Theme);
-    	}
-    	
-        Window win = PolicyManager.makeNewWindow(context);
-        if (win.getWindowStyle().getBoolean(
-                com.android.internal.R.styleable.Window_windowDisablePreview, false)) {
-            return null;
-        }
-        
-        Resources r = context.getResources();
-        win.setTitle(r.getText(labelRes, nonLocalizedLabel));
-
-        win.setType(
-            WindowManager.LayoutParams.TYPE_APPLICATION_STARTING);
-        // Force the window flags: this is a fake window, so it is not really
-        // touchable or focusable by the user.  We also add in the ALT_FOCUSABLE_IM
-        // flag because we do know that the next window will take input
-        // focus, so we want to get the IME window up on top of us right away.
-        win.setFlags(
-            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE|
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|
-            WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE|
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|
-            WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
-
-        win.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
-                            WindowManager.LayoutParams.MATCH_PARENT);
-
-        final WindowManager.LayoutParams params = win.getAttributes();
-        params.token = appToken;
-        params.packageName = packageName;
-        params.windowAnimations = win.getWindowStyle().getResourceId(
-                com.android.internal.R.styleable.Window_windowAnimationStyle, 0);
-        params.setTitle("Starting " + packageName);
-
         try {
+        	Context context = mContext;
+        	boolean setTheme = false;
+        	//Log.i(TAG, "addStartingWindow " + packageName + ": nonLocalizedLabel="
+        	//        + nonLocalizedLabel + " theme=" + Integer.toHexString(theme));
+        	if (theme != 0 || labelRes != 0) {
+        	    try {
+        	        context = context.createPackageContext(packageName, 0);
+        	        if (theme != 0) {
+        	            context.setTheme(theme);
+        	            setTheme = true;
+        	        }
+        	    } catch (PackageManager.NameNotFoundException e) {
+                    // Ignore
+                }
+        	}
+        	if (!setTheme) {
+        	    context.setTheme(com.android.internal.R.style.Theme);
+        	}
+        	
+            Window win = PolicyManager.makeNewWindow(context);
+            if (win.getWindowStyle().getBoolean(
+                    com.android.internal.R.styleable.Window_windowDisablePreview, false)) {
+                return null;
+            }
+            
+            Resources r = context.getResources();
+            win.setTitle(r.getText(labelRes, nonLocalizedLabel));
+    
+            win.setType(
+                WindowManager.LayoutParams.TYPE_APPLICATION_STARTING);
+            // Force the window flags: this is a fake window, so it is not really
+            // touchable or focusable by the user.  We also add in the ALT_FOCUSABLE_IM
+            // flag because we do know that the next window will take input
+            // focus, so we want to get the IME window up on top of us right away.
+            win.setFlags(
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE|
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|
+                WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE|
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|
+                WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+    
+            win.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
+                                WindowManager.LayoutParams.MATCH_PARENT);
+    
+            final WindowManager.LayoutParams params = win.getAttributes();
+            params.token = appToken;
+            params.packageName = packageName;
+            params.windowAnimations = win.getWindowStyle().getResourceId(
+                    com.android.internal.R.styleable.Window_windowAnimationStyle, 0);
+            params.setTitle("Starting " + packageName);
+
             WindowManagerImpl wm = (WindowManagerImpl)
                     context.getSystemService(Context.WINDOW_SERVICE);
             View view = win.getDecorView();
@@ -909,6 +909,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         } catch (WindowManagerImpl.BadTokenException e) {
             // ignore
             Log.w(TAG, appToken + " already running, starting window not displayed");
+        } catch (RuntimeException e) {
+            // don't crash if something else bad happens, for example a
+            // failure loading resources because we are loading from an app
+            // on external storage that has been unmounted.
+            Log.w(TAG, appToken + " failed creating starting window", e);
         }
 
         return null;
