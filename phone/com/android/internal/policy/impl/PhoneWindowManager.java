@@ -202,6 +202,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     boolean mSystemReady;
     boolean mLidOpen;
     int mUiMode = Configuration.UI_MODE_TYPE_NORMAL;
+    int mDockMode = Intent.EXTRA_DOCK_STATE_UNDOCKED;
     int mLidOpenRotation;
     int mCarDockRotation;
     int mDeskDockRotation;
@@ -340,8 +341,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             return true;
         }
         // We're in a dock that has a rotation affinity, an the app is willing to rotate.
-        if ((mCarDockEnablesAccelerometer && mUiMode == Configuration.UI_MODE_TYPE_CAR)
-                || (mDeskDockEnablesAccelerometer && mUiMode == Configuration.UI_MODE_TYPE_DESK)) {
+        if ((mCarDockEnablesAccelerometer && mDockMode == Intent.EXTRA_DOCK_STATE_CAR)
+                || (mDeskDockEnablesAccelerometer && mDockMode == Intent.EXTRA_DOCK_STATE_DESK)) {
             // Note we override the nosensor flag here.
             if (appOrientation == ActivityInfo.SCREEN_ORIENTATION_USER
                     || appOrientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -364,8 +365,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             // orientation, then we need to turn the sensor or.
             return true;
         }
-        if ((mCarDockEnablesAccelerometer && mUiMode == Configuration.UI_MODE_TYPE_CAR) ||
-            (mDeskDockEnablesAccelerometer && mUiMode == Configuration.UI_MODE_TYPE_DESK)) {
+        if ((mCarDockEnablesAccelerometer && mDockMode == Intent.EXTRA_DOCK_STATE_CAR) ||
+            (mDeskDockEnablesAccelerometer && mDockMode == Intent.EXTRA_DOCK_STATE_DESK)) {
             // enable accelerometer if we are docked in a dock that enables accelerometer
             // orientation management,
             return true;
@@ -526,7 +527,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         filter.addAction(UiModeManager.ACTION_EXIT_CAR_MODE);
         filter.addAction(UiModeManager.ACTION_ENTER_DESK_MODE);
         filter.addAction(UiModeManager.ACTION_EXIT_DESK_MODE);
-        context.registerReceiver(mDockReceiver, filter);
+        filter.addAction(Intent.ACTION_DOCK_EVENT);
+        Intent intent = context.registerReceiver(mDockReceiver, filter);
+        if (intent != null) {
+            // Retrieve current sticky dock event broadcast.
+            mDockMode = intent.getIntExtra(Intent.EXTRA_DOCK_STATE,
+                    Intent.EXTRA_DOCK_STATE_UNDOCKED);
+        }
         mVibrator = new Vibrator();
         mLongPressVibePattern = getLongIntArray(mContext.getResources(),
                 com.android.internal.R.array.config_longPressVibePattern);
@@ -1978,11 +1985,16 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
     BroadcastReceiver mDockReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
-            try {
-                IUiModeManager uiModeService = IUiModeManager.Stub.asInterface(
-                        ServiceManager.getService(Context.UI_MODE_SERVICE));
-                mUiMode = uiModeService.getCurrentModeType();
-            } catch (RemoteException e) {
+            if (Intent.ACTION_DOCK_EVENT.equals(intent.getAction())) {
+                mDockMode = intent.getIntExtra(Intent.EXTRA_DOCK_STATE,
+                        Intent.EXTRA_DOCK_STATE_UNDOCKED);
+            } else {
+                try {
+                    IUiModeManager uiModeService = IUiModeManager.Stub.asInterface(
+                            ServiceManager.getService(Context.UI_MODE_SERVICE));
+                    mUiMode = uiModeService.getCurrentModeType();
+                } catch (RemoteException e) {
+                }
             }
             updateRotation(Surface.FLAGS_ORIENTATION_ANIMATION_DISABLE);
             updateOrientationListenerLp();
@@ -2111,9 +2123,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             //or case.unspecified
             if (mLidOpen) {
                 return mLidOpenRotation;
-            } else if (mUiMode == Configuration.UI_MODE_TYPE_CAR && mCarDockRotation >= 0) {
+            } else if (mDockMode == Intent.EXTRA_DOCK_STATE_CAR && mCarDockRotation >= 0) {
                 return mCarDockRotation;
-            } else if (mUiMode == Configuration.UI_MODE_TYPE_DESK && mDeskDockRotation >= 0) {
+            } else if (mDockMode == Intent.EXTRA_DOCK_STATE_DESK && mDeskDockRotation >= 0) {
                 return mDeskDockRotation;
             } else {
                 if (useSensorForOrientationLp(orientation)) {
@@ -2225,9 +2237,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         int rotation = Surface.ROTATION_0;
         if (mLidOpen) {
             rotation = mLidOpenRotation;
-        } else if (mUiMode == Configuration.UI_MODE_TYPE_CAR && mCarDockRotation >= 0) {
+        } else if (mDockMode == Intent.EXTRA_DOCK_STATE_CAR && mCarDockRotation >= 0) {
             rotation = mCarDockRotation;
-        } else if (mUiMode == Configuration.UI_MODE_TYPE_DESK && mDeskDockRotation >= 0) {
+        } else if (mDockMode == Intent.EXTRA_DOCK_STATE_DESK && mDeskDockRotation >= 0) {
             rotation = mDeskDockRotation;
         }
         //if lid is closed orientation will be portrait
@@ -2247,6 +2259,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
      */
     Intent createHomeDockIntent() {
         Intent intent;
+        
+        // What home does is based on the mode, not the dock state.  That
+        // is, when in car mode you should be taken to car home regardless
+        // of whether we are actually in a car dock.
         if (mUiMode == Configuration.UI_MODE_TYPE_CAR) {
             intent = mCarDockIntent;
         } else if (mUiMode == Configuration.UI_MODE_TYPE_DESK) {
