@@ -19,6 +19,7 @@ package com.android.internal.policy.impl;
 import android.app.ActivityManager;
 import android.app.Dialog;
 import android.app.StatusBarManager;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -29,6 +30,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -117,7 +119,11 @@ public class RecentApplicationsDialog extends Dialog implements OnClickListener 
                 Intent intent = (Intent)b.getTag();
                 if (intent != null) {
                     intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY);
-                    getContext().startActivity(intent);
+                    try {
+                        getContext().startActivity(intent);
+                    } catch (ActivityNotFoundException e) {
+                        Log.w("Recent", "Unable to launch recent task", e);
+                    }
                 }
                 break;
             }
@@ -171,7 +177,7 @@ public class RecentApplicationsDialog extends Dialog implements OnClickListener 
         final ActivityManager am = (ActivityManager)
                                         context.getSystemService(Context.ACTIVITY_SERVICE);
         final List<ActivityManager.RecentTaskInfo> recentTasks =
-                                        am.getRecentTasks(MAX_RECENT_TASKS, 0);
+            am.getRecentTasks(MAX_RECENT_TASKS, ActivityManager.RECENT_IGNORE_UNAVAILABLE);
 
         ActivityInfo homeInfo = 
             new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
