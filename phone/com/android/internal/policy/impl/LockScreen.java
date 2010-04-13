@@ -513,11 +513,12 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
                         getCarrierString(
                                 mUpdateMonitor.getTelephonyPlmn(),
                                 mUpdateMonitor.getTelephonySpn()));
-                // unnecessary clutter
-                //mScreenLocked.setText(R.string.lockscreen_screen_locked);
+
+                // Empty now, but used for sliding tab feedback
+                mScreenLocked.setText("");
 
                 // layout
-                mScreenLocked.setVisibility(View.INVISIBLE);
+                mScreenLocked.setVisibility(View.VISIBLE);
                 mSelector.setVisibility(View.VISIBLE);
                 mEmergencyCallText.setVisibility(View.GONE);
                 break;
