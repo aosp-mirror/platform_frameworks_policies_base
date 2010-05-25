@@ -82,7 +82,7 @@ class ShortcutManager extends ContentObserver {
             String intentURI = c.getString(COLUMN_INTENT);
             Intent intent = null;
             try {
-                intent = Intent.getIntent(intentURI);
+                intent = Intent.parseUri(intentURI, 0);
             } catch (URISyntaxException e) {
                 Log.w(TAG, "Intent URI for shortcut invalid.", e);
             }
