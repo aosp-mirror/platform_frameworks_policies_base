@@ -118,6 +118,16 @@ public class KeyguardUpdateMonitor {
                 this.simState = IccCard.State.ABSENT;
             } else if (IccCard.INTENT_VALUE_ICC_READY.equals(stateExtra)) {
                 this.simState = IccCard.State.READY;
+            } else if (IccCard.INTENT_VALUE_ICC_UNUSED.equals(stateExtra)) {
+                /*
+                 * During ICC card status change, if the radio state is NV_READY
+                 * then ACTION_SIM_STATE_CHANGED intent will be broadcasted with
+                 * INTENT_VALUE_ICC_UNUSED value. If the intent value is
+                 * INTENT_VALUE_ICC_UNUSED, KeyguardUpdateMonitor will update
+                 * the SIM state as "READY" and the lock screen will be updated
+                 * with normal status instead of sim missing.
+                 */
+                this.simState = IccCard.State.READY;
             } else if (IccCard.INTENT_VALUE_ICC_LOCKED.equals(stateExtra)) {
                 final String lockedReason = intent
                         .getStringExtra(IccCard.INTENT_KEY_LOCKED_REASON);
