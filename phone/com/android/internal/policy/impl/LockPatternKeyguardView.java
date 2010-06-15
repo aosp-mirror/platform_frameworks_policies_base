@@ -36,6 +36,8 @@ import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.telephony.PhoneNumberUtils;
 import android.os.SystemProperties;
 import android.text.TextUtils;
 import android.util.Log;
@@ -245,9 +247,19 @@ public class LockPatternKeyguardView extends KeyguardViewBase
             }
 
             public void takeEmergencyCallAction() {
+                takeEmergencyCallAction(null);
+            }
+
+            public void takeEmergencyCallAction(String number) {
                 Intent intent = new Intent(ACTION_EMERGENCY_DIAL);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                         | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+
+                // Add number if available
+                if (number != null) {
+                    intent.setData(Uri.parse("tel:" + number));
+                }
+
                 getContext().startActivity(intent);
             }
 
@@ -434,6 +446,21 @@ public class LockPatternKeyguardView extends KeyguardViewBase
             getCallback().pokeWakelock();
         }
     }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (DEBUG) Log.d(TAG, "dispatchKeyEvent for key=" + event.getKeyCode());
+
+         // Dial emergency number if screen is locked
+         if (event.getAction() == KeyEvent.ACTION_UP && (!mScreenOn || mMode == Mode.LockScreen)) {
+             char c = event.getNumber();
+             if (PhoneNumberUtils.isReallyDialable(c)) {
+                 if (DEBUG) Log.d(TAG, "starting emergency dialer with number=" + c);
+                 mKeyguardScreenCallback.takeEmergencyCallAction(c + "");
+             }
+         }
+         return super.dispatchKeyEvent(event);
+     }
 
     @Override
     public void verifyUnlock() {
