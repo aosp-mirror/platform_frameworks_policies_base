@@ -63,6 +63,12 @@ public interface KeyguardScreenCallback extends KeyguardViewCallback {
     void takeEmergencyCallAction();
 
     /**
+     * Take action to send an emergency call to a prefilled number.
+     * @param prefilled number
+     */
+    void takeEmergencyCallAction(String number);
+
+    /**
      * Report that the user had a failed attempt unlocking via the pattern.
      */
     void reportFailedPatternAttempt();
