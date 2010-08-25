@@ -217,6 +217,19 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     int mAccelerometerDefault = DEFAULT_ACCELEROMETER_ROTATION;
     boolean mHasSoftInput = false;
     
+    private static final int CLAMSHELL_STATE_UNINITIALIZED = 0; // not initialized
+    private static final int CLAMSHELL_STATE_NOT_CLAMSHELL = 1; // device is not clam shell type
+    private static final int CLAMSHELL_STATE_OPENED = 2;        // clam shell is opened (clam shell device)
+    private static final int CLAMSHELL_STATE_CLOSED = 3;        // clam shell is closed (clam shell device)
+    private int mClamshellState = CLAMSHELL_STATE_UNINITIALIZED;
+
+    private static final int CLAMSHELL_ORIENTATION_UNINITIALIZED = 0;  // not initialized
+    private static final int CLAMSHELL_ORIENTATION_DEFAULT = 1;        // not landscape
+    private static final int CLAMSHELL_ORIENTATION_LANDSCAPE = 2;      // landscape when opened
+    private int mClamshellOrientation = CLAMSHELL_ORIENTATION_UNINITIALIZED;
+    // true if display has been enabled to draw.
+    private boolean mLastDisplayEnabled = false;
+
     int mPointerLocationMode = 0;
     PointerLocationView mPointerLocationView = null;
     
@@ -1639,15 +1652,19 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                                     KeyEvent.KEYCODE_POWER);
                         }
                     } else {
-                        // Light up the keyboard if we are sliding up.
-                        if (mLidOpen) {
-                            mPowerManager.userActivity(SystemClock.uptimeMillis(), false,
-                                    LocalPowerManager.BUTTON_EVENT);
-                        } else {
-                            mPowerManager.userActivity(SystemClock.uptimeMillis(), false,
-                                    LocalPowerManager.OTHER_EVENT);
+                        if (!isClamshell()) {
+                            // Light up the keyboard if we are sliding up.
+                            if (mLidOpen) {
+                                mPowerManager.userActivity(SystemClock.uptimeMillis(), false,
+                                        LocalPowerManager.BUTTON_EVENT);
+                            } else {
+                                mPowerManager.userActivity(SystemClock.uptimeMillis(), false,
+                                        LocalPowerManager.OTHER_EVENT);
+                            }
                         }
                     }
+                    // Notify clam-schell open state.
+                    notifyClamshcellOpenStateChange(event.value == 0);
                 }
         }
         return false;
@@ -1804,6 +1821,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 result |= ACTION_POKE_USER_ACTIVITY;
                 result &= ~ACTION_PASS_TO_USER;
             }
+        }
+
+        // MediaKey should be pass to user activity even if the clam-shell is closed.
+        if ((mClamshellState == CLAMSHELL_STATE_CLOSED) && isMediaKey(event.keycode)) {
+            result |= ACTION_PASS_TO_USER;
         }
 
         int type = event.type;
@@ -2133,6 +2155,24 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     //always return portrait if orientation set to portrait
                     return mPortraitRotation;
             }
+
+            if (isClamshell()) {
+                if (useSensorForOrientationLp(orientation)) {
+                    // If the user has enabled auto rotation by default, do it.
+                    int curRotation = mOrientationListener.getCurrentRotation();
+                    if (curRotation >= 0) {
+                        return curRotation;
+                    } else if (mLastDisplayEnabled != displayEnabled) {
+                        //caused wrong orientaion when displayEnabled first turns on.
+                        mLastDisplayEnabled = displayEnabled;
+                        return getRotationOnClamshellOpen();
+                    } else {
+                        return lastRotation;
+                    }
+                }
+                return getRotationOnClamshellOpen();
+            }
+
             // case for nosensor meaning ignore sensor and consider only lid
             // or orientation sensor disabled
             //or case.unspecified
@@ -2244,12 +2284,38 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     /** {@inheritDoc} */
     public void enableScreenAfterBoot() {
         readLidState();
+
+        // Initialize clam shell state and rotatation.
+        mClamshellState = CLAMSHELL_STATE_NOT_CLAMSHELL;
+        try {
+            if (!isEmulator()
+                && mContext.getResources().getBoolean(
+                    com.android.internal.R.bool.config_clamshell_type)) {
+                // set clam shell state and notify clam shell state to PowerManager
+                mClamshellState = mLidOpen ? CLAMSHELL_STATE_CLOSED : CLAMSHELL_STATE_OPENED;
+
+                mClamshellOrientation = CLAMSHELL_ORIENTATION_DEFAULT;
+                if (mContext.getResources().getBoolean(com.android.internal.R.bool
+                    .config_clamshell_orientation_to_landscape)) {
+                    mClamshellOrientation = CLAMSHELL_ORIENTATION_LANDSCAPE;
+                }
+
+                notifyClamshcellOpenStateChange(mLidOpen);
+            }
+        } catch (Resources.NotFoundException e) {
+        }
+
         updateRotation(Surface.FLAGS_ORIENTATION_ANIMATION_DISABLE);
     }
 
     void updateRotation(int animFlags) {
         mPowerManager.setKeyboardVisibility(mLidOpen);
         int rotation = Surface.ROTATION_0;
+
+        if (isClamshell()) {
+            rotation = getRotationOnClamshellOpen();
+        } else
+
         if (mLidOpen) {
             rotation = mLidOpenRotation;
         } else if (mDockMode == Intent.EXTRA_DOCK_STATE_CAR && mCarDockRotation >= 0) {
@@ -2423,5 +2489,72 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     public boolean allowKeyRepeat() {
         // disable key repeat when screen is off
         return mScreenOn;
+    }
+
+    /**
+     * Notify clam shell open state to PowerManager when open state is changed.
+     *
+     * @param isOpen clam shell open state.
+     */
+    private void notifyClamshcellOpenStateChange(final boolean isOpen) {
+        switch (mClamshellState) {
+        case CLAMSHELL_STATE_OPENED:
+            if (!isOpen) {
+                mPowerManager.notifyClamshcellClosed();
+                mClamshellState = CLAMSHELL_STATE_CLOSED;
+            }
+            break;
+        case CLAMSHELL_STATE_CLOSED:
+            if (isOpen) {
+                mPowerManager.notifyClamshellOpend();
+                mClamshellState = CLAMSHELL_STATE_OPENED;
+            }
+            break;
+        }
+    }
+
+    /**
+     * Returns whether device is clamshell type or not.
+     *
+     * @return True if device is clamshell type.
+     */
+    private boolean isClamshell() {
+        return (mClamshellState == CLAMSHELL_STATE_OPENED)
+            || (mClamshellState == CLAMSHELL_STATE_CLOSED);
+    }
+
+    /**
+     * Returns whether environment is emulator or not.
+     *
+     * @return True if environment is emulator.
+     */
+    private boolean isEmulator() {
+        return SystemProperties.get("ro.kernel.qemu").equals("1");
+    }
+
+    /**
+     * Gets rotation angle which appliciate for opening clamshell.
+     *
+     * @return Rotation angle for opening clamshell.
+     */
+    private int getRotationOnClamshellOpen() {
+        if (mPortraitRotation < 0) {
+            // Initialize the rotation angles for each orientation once.
+            Display d = ((WindowManager) mContext.getSystemService(
+                    Context.WINDOW_SERVICE)).getDefaultDisplay();
+            if (d.getWidth() > d.getHeight()) {
+                mPortraitRotation = Surface.ROTATION_90;
+                mLandscapeRotation = Surface.ROTATION_0;
+            } else {
+                mPortraitRotation = Surface.ROTATION_0;
+                mLandscapeRotation = Surface.ROTATION_90;
+            }
+        }
+
+        if (mClamshellOrientation == CLAMSHELL_ORIENTATION_LANDSCAPE) {
+            return mLandscapeRotation;
+        } else {
+            return mPortraitRotation;
+        }
     }
 }
