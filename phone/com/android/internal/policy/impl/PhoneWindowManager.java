@@ -191,6 +191,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     
     boolean mSafeMode;
     WindowState mStatusBar = null;
+    boolean mStatusBarCanHide;
     final ArrayList<WindowState> mStatusBarPanels = new ArrayList<WindowState>();
     WindowState mKeyguard = null;
     KeyguardViewMediator mKeyguardMediator;
@@ -548,6 +549,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 com.android.internal.R.array.config_safeModeDisabledVibePattern);
         mSafeModeEnabledVibePattern = getLongIntArray(mContext.getResources(),
                 com.android.internal.R.array.config_safeModeEnabledVibePattern);
+
+        // Note: the Configuration is not stable here, so we cannot load mStatusBarCanHide from
+        // config_statusBarCanHide because the latter depends on the screen size
     }
 
     public void updateSettings() {
@@ -964,6 +968,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     return WindowManagerImpl.ADD_MULTIPLE_SINGLETON;
                 }
                 mStatusBar = win;
+
+                // Determine whether applications may hide the status bar.
+                // The Configuration will be stable by now, so we can load this safely.
+                mStatusBarCanHide = mContext.getResources().getBoolean(
+                        com.android.internal.R.bool.config_statusBarCanHide);
                 break;
             case TYPE_STATUS_BAR_PANEL:
                 mStatusBarPanels.add(win);
@@ -1232,7 +1241,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     public void getContentInsetHintLw(WindowManager.LayoutParams attrs, Rect contentInset) {
         final int fl = attrs.flags;
         
-        if ((fl &
+        if (mStatusBarCanHide && (fl &
                 (FLAG_LAYOUT_IN_SCREEN | FLAG_FULLSCREEN | FLAG_LAYOUT_INSET_DECOR))
                 == (FLAG_LAYOUT_IN_SCREEN | FLAG_LAYOUT_INSET_DECOR)) {
             contentInset.set(mCurLeft, mCurTop, mW - mCurRight, mH - mCurBottom);
@@ -1353,7 +1362,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             attrs.gravity = Gravity.BOTTOM;
             mDockLayer = win.getSurfaceLayer();
         } else {
-            if ((fl &
+            if (mStatusBarCanHide && (fl &
                     (FLAG_LAYOUT_IN_SCREEN | FLAG_FULLSCREEN | FLAG_LAYOUT_INSET_DECOR))
                     == (FLAG_LAYOUT_IN_SCREEN | FLAG_LAYOUT_INSET_DECOR)) {
                 // This is the case for a normal activity window: we want it
@@ -1385,7 +1394,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     vf.right = mCurRight;
                     vf.bottom = mCurBottom;
                 }
-            } else if ((fl & FLAG_LAYOUT_IN_SCREEN) != 0) {
+            } else if (mStatusBarCanHide && (fl & FLAG_LAYOUT_IN_SCREEN) != 0) {
                 // A window that has requested to fill the entire screen just
                 // gets everything, period.
                 pf.left = df.left = cf.left = 0;
@@ -1529,9 +1538,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 boolean hideStatusBar =
                     (lp.flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
                 if (hideStatusBar) {
-                    if (DEBUG_LAYOUT) Log.v(TAG, "Hiding status bar");
-                    if (mStatusBar.hideLw(true)) changes |= FINISH_LAYOUT_REDO_LAYOUT;
-                    hiding = true;
+                    if (mStatusBarCanHide) {
+                        if (DEBUG_LAYOUT) Log.v(TAG, "Hiding status bar");
+                        if (mStatusBar.hideLw(true)) changes |= FINISH_LAYOUT_REDO_LAYOUT;
+                        hiding = true;
+                    } else if (localLOGV) {
+                        Log.v(TAG, "Preventing status bar from hiding by policy");
+                    }
                 } else {
                     if (DEBUG_LAYOUT) Log.v(TAG, "Showing status bar");
                     if (mStatusBar.showLw(true)) changes |= FINISH_LAYOUT_REDO_LAYOUT;
