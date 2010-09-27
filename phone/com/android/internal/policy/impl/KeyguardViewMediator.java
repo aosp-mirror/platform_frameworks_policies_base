@@ -1093,7 +1093,11 @@ public class KeyguardViewMediator implements KeyguardViewCallback,
     private void handleReset() {
         synchronized (KeyguardViewMediator.this) {
             if (DEBUG) Log.d(TAG, "handleReset");
-            mKeyguardViewManager.reset();
+            if (!isShowing()) {
+                doKeyguard();
+            } else {
+                mKeyguardViewManager.reset();
+            }
         }
     }
 
