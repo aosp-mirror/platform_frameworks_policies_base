@@ -103,9 +103,9 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         Normal(true),
 
         /**
-         * The sim card is 'network locked'.
+         * The sim card is 'perso locked'.
          */
-        NetworkLocked(true),
+        PersoLocked(true),
 
         /**
          * The sim card is missing.
@@ -481,8 +481,8 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         switch (simState) {
             case ABSENT:
                 return Status.SimMissing;
-            case NETWORK_LOCKED:
-                return Status.SimMissingLocked;
+            case PERSO_LOCKED:
+                return Status.PersoLocked;
             case NOT_READY:
                 return Status.SimMissing;
             case PIN_REQUIRED:
@@ -522,13 +522,13 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
                 mSelector.setVisibility(View.VISIBLE);
                 mEmergencyCallText.setVisibility(View.GONE);
                 break;
-            case NetworkLocked:
+            case PersoLocked:
                 // The carrier string shows both sim card status (i.e. No Sim Card) and
                 // carrier's name and/or "Emergency Calls Only" status
                 mCarrier.setText(
                         getCarrierString(
                                 mUpdateMonitor.getTelephonyPlmn(),
-                                getContext().getText(R.string.lockscreen_network_locked_message)));
+                                getContext().getText(R.string.lockscreen_perso_locked_message)));
                 mScreenLocked.setText(R.string.lockscreen_instructions_when_pattern_disabled);
 
                 // layout
