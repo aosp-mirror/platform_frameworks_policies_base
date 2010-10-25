@@ -1741,7 +1741,21 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
         return false;    
     }
- 
+
+    void wakeUpModem() {
+        try {
+            final ITelephony phone = getPhoneInterface();
+            if (phone != null && phone.isModemPowerSave()) {
+                Intent mScreenOnIntent = new Intent(Intent.ACTION_SCREEN_ON);
+                mContext.sendOrderedBroadcast(mScreenOnIntent, null);
+                if (localLOGV)
+                    Log.i(TAG, "Trying to wake up modem");
+            }
+        } catch (RemoteException ex) {
+            Log.w(TAG, "ITelephony.isPowerSave() threw RemoteException" + ex);
+        }
+    }
+
     /** {@inheritDoc} */
     public int interceptKeyTq(RawInputEvent event, boolean screenIsOn) {
         int result = ACTION_PASS_TO_USER;
@@ -1761,6 +1775,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         if (keyguardActive) {
             if (screenIsOn) {
+               //This is the LOCKED state
+               //Wake up the modem only when the menu key is pressed
+               if ( event.keycode == KeyEvent.KEYCODE_MENU) {
+                  wakeUpModem();
+               }
                 // when the screen is on, always give the event to the keyguard
                 result |= ACTION_PASS_TO_USER;
             } else {
