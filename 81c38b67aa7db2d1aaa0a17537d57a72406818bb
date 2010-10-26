@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "AAAA8H//+e8\u003d",
+        "filename": "phone/com/android/internal/policy/impl/PhoneWindowManager.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 1749,
+      "author": {
+        "id": 1000559
+      },
+      "writtenOn": "2010-10-26T08:06:21Z",
+      "side": 1,
+      "message": "It is wrong to be sending this broadcast here.  The SCREEN_ON broadcast is sent by PowerManagerService when it is turning the screen on.  This is a public API with well defined semantics that apps rely on.  Sending the broadcast here conflicts with the correct semantics as implemented by the power manager (that this means the screen is about to turn on).",
+      "revId": "81c38b67aa7db2d1aaa0a17537d57a72406818bb",
+      "serverId": "85c56323-6fa9-3386-8a01-6480fb634889",
+      "unresolved": false
+    }
+  ]
+}
