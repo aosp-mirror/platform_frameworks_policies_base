@@ -1,0 +1,8 @@
+Change-Id: Id4c71dc758da9c2204f6c8fe815eb8a9982b078d
+Code-Review-1: Jean-Baptiste Queru <jbq@google.com>
+Code-Review+2: Jeff Hamilton <jham@google.com>
+Code-Review+2: John Huang <jsh@android.com>
+Verified+1: John Huang <jsh@android.com>
+Reviewed-on: https://review.source.android.com/4410
+Project: platform/frameworks/policies/base
+Branch: refs/heads/cdma-import
