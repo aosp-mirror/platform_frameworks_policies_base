@@ -566,9 +566,9 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
      * Change the airplane mode system setting
      */
     private void changeAirplaneModeSystemSetting(boolean on) {
-        Settings.System.putInt(
+        Settings.Global.putInt(
                 mContext.getContentResolver(),
-                Settings.System.AIRPLANE_MODE_ON,
+                Settings.Global.AIRPLANE_MODE_ON,
                 on ? 1 : 0);
         Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
         intent.addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
